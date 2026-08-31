@@ -1,0 +1,144 @@
+-- Jessie Collection: GANTI stok akhir + keterangan sesuai file Excel 26 Agustus.
+-- HY JP56 = Sheet1 stok akhir 1443; HONGYANG = Sheet2 qty 170.
+START TRANSACTION;
+
+-- Pastikan kolom description ada (kompatibel MySQL yang tidak mendukung ADD COLUMN IF NOT EXISTS).
+SET @has_description := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'description');
+SET @sql := IF(@has_description = 0, 'ALTER TABLE products ADD COLUMN description VARCHAR(255) NULL AFTER code', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- HY JP56 (brand_id = 2)
+UPDATE products SET stock=9, description='BAJU SPORTT' WHERE brand_id=2 AND UPPER(TRIM(code))='AB';
+UPDATE products SET stock=37, description='CELANA KATUN COWOK' WHERE brand_id=2 AND UPPER(TRIM(code))='ACP';
+UPDATE products SET stock=21, description='RAJUT SEDANG ( MIX CARDI )' WHERE brand_id=2 AND UPPER(TRIM(code))='ASW';
+UPDATE products SET stock=22, description='INNER RAJUT TIPIS' WHERE brand_id=2 AND UPPER(TRIM(code))='ASWI';
+UPDATE products SET stock=0, description='TAS' WHERE brand_id=2 AND UPPER(TRIM(code))='BAGL';
+UPDATE products SET stock=8, description='GENDONGAN BAYI' WHERE brand_id=2 AND UPPER(TRIM(code))='BBC';
+UPDATE products SET stock=9, description='KORSET' WHERE brand_id=2 AND UPPER(TRIM(code))='BBH';
+UPDATE products SET stock=10, description='KORSET REGULER' WHERE brand_id=2 AND UPPER(TRIM(code))='BBHR';
+UPDATE products SET stock=11, description='BRA' WHERE brand_id=2 AND UPPER(TRIM(code))='BH';
+UPDATE products SET stock=10, description='BRA REGULER' WHERE brand_id=2 AND UPPER(TRIM(code))='BHR';
+UPDATE products SET stock=1, description='BRA SPORT' WHERE brand_id=2 AND UPPER(TRIM(code))='BHT';
+UPDATE products SET stock=1, description='TANKTOP CUP BRA' WHERE brand_id=2 AND UPPER(TRIM(code))='BHTR';
+UPDATE products SET stock=6, description='SELIMUT' WHERE brand_id=2 AND UPPER(TRIM(code))='BKT';
+UPDATE products SET stock=1, description='KESET KAKI' WHERE brand_id=2 AND UPPER(TRIM(code))='BTM';
+UPDATE products SET stock=16, description='KEMEJA COWOK' WHERE brand_id=2 AND UPPER(TRIM(code))='CAS';
+UPDATE products SET stock=5, description='CELANA KULOT' WHERE brand_id=2 AND UPPER(TRIM(code))='CLS';
+UPDATE products SET stock=0, description='RAJUT JALA TEBAL' WHERE brand_id=2 AND UPPER(TRIM(code))='CLT';
+UPDATE products SET stock=18, description='CELANA CORDURAY' WHERE brand_id=2 AND UPPER(TRIM(code))='CP';
+UPDATE products SET stock=4, description='ANAK TIPIS' WHERE brand_id=2 AND UPPER(TRIM(code))='CWAA';
+UPDATE products SET stock=23, description='DRESS ANAK-ANAK' WHERE brand_id=2 AND UPPER(TRIM(code))='CWGG';
+UPDATE products SET stock=4, description='CELANA ANAK-ANAK' WHERE brand_id=2 AND UPPER(TRIM(code))='CWP';
+UPDATE products SET stock=49, description='CELANA PENDEK ANAK' WHERE brand_id=2 AND UPPER(TRIM(code))='CWS';
+UPDATE products SET stock=20, description='CELANA 3/4' WHERE brand_id=2 AND UPPER(TRIM(code))='DP';
+UPDATE products SET stock=1, description='INNER / MANSET HITAM' WHERE brand_id=2 AND UPPER(TRIM(code))='DWH';
+UPDATE products SET stock=1, description='INNER / MANSET WARNA' WHERE brand_id=2 AND UPPER(TRIM(code))='DWP';
+UPDATE products SET stock=9, description='SPREI' WHERE brand_id=2 AND UPPER(TRIM(code))='FC';
+UPDATE products SET stock=6, description='FLANEL COWOK' WHERE brand_id=2 AND UPPER(TRIM(code))='FS';
+UPDATE products SET stock=15, description='FLANEL CEWEK MIX' WHERE brand_id=2 AND UPPER(TRIM(code))='FSR';
+UPDATE products SET stock=4, description='OUTER' WHERE brand_id=2 AND UPPER(TRIM(code))='FTS';
+UPDATE products SET stock=8, description='KARGO PENDEK COWOK' WHERE brand_id=2 AND UPPER(TRIM(code))='HTP';
+UPDATE products SET stock=8, description='CELANA PENDEK CEWEK' WHERE brand_id=2 AND UPPER(TRIM(code))='HTPL';
+UPDATE products SET stock=1, description='FLANEL ANAK' WHERE brand_id=2 AND UPPER(TRIM(code))='KAF';
+UPDATE products SET stock=0, description='KEMEJA ANAK REGULER' WHERE brand_id=2 AND UPPER(TRIM(code))='KAKR';
+UPDATE products SET stock=8, description='BLOUSE TEBAL BKK' WHERE brand_id=2 AND UPPER(TRIM(code))='LBA';
+UPDATE products SET stock=14, description='BLOUSE KATUN' WHERE brand_id=2 AND UPPER(TRIM(code))='LBC';
+UPDATE products SET stock=0, description='BLOUSE JEANS' WHERE brand_id=2 AND UPPER(TRIM(code))='LBCJ';
+UPDATE products SET stock=0, description='BLOUSE PUTIH' WHERE brand_id=2 AND UPPER(TRIM(code))='LBCW';
+UPDATE products SET stock=69, description='JEANS BIRU' WHERE brand_id=2 AND UPPER(TRIM(code))='LBJP';
+UPDATE products SET stock=92, description='BLOUSE MIX' WHERE brand_id=2 AND UPPER(TRIM(code))='LBM';
+UPDATE products SET stock=5, description='BLOUSE MIX PANJANG' WHERE brand_id=2 AND UPPER(TRIM(code))='LBML';
+UPDATE products SET stock=3, description='JAKET JEANS CEWEK' WHERE brand_id=2 AND UPPER(TRIM(code))='LCDS';
+UPDATE products SET stock=177, description='CELANA KATUN CEWEK' WHERE brand_id=2 AND UPPER(TRIM(code))='LCPL';
+UPDATE products SET stock=51, description='DRESS KATUN' WHERE brand_id=2 AND UPPER(TRIM(code))='LDCA';
+UPDATE products SET stock=6, description='DRESS HITAM' WHERE brand_id=2 AND UPPER(TRIM(code))='LDH';
+UPDATE products SET stock=10, description='DRESS KNIT' WHERE brand_id=2 AND UPPER(TRIM(code))='LDK';
+UPDATE products SET stock=134, description='DRESS MIX' WHERE brand_id=2 AND UPPER(TRIM(code))='LDS';
+UPDATE products SET stock=30, description='CELANA PINGGANG KARET' WHERE brand_id=2 AND UPPER(TRIM(code))='LJG';
+UPDATE products SET stock=47, description='CELANA KANTOR CEWEK' WHERE brand_id=2 AND UPPER(TRIM(code))='LPP';
+UPDATE products SET stock=2, description='ROK JEANS' WHERE brand_id=2 AND UPPER(TRIM(code))='LSJ';
+UPDATE products SET stock=8, description='ROK KNITT' WHERE brand_id=2 AND UPPER(TRIM(code))='LSK';
+UPDATE products SET stock=54, description='RAJUTAN' WHERE brand_id=2 AND UPPER(TRIM(code))='LSKK';
+UPDATE products SET stock=43, description='ROK' WHERE brand_id=2 AND UPPER(TRIM(code))='LSML';
+UPDATE products SET stock=1, description='OBLONG PANJANG' WHERE brand_id=2 AND UPPER(TRIM(code))='LTAL';
+UPDATE products SET stock=47, description='KAOS OBLONG PENDEK CEWEK' WHERE brand_id=2 AND UPPER(TRIM(code))='LTB';
+UPDATE products SET stock=2, description='CELANA PENDEK SPORT' WHERE brand_id=2 AND UPPER(TRIM(code))='MAS';
+UPDATE products SET stock=3, description='BOXER' WHERE brand_id=2 AND UPPER(TRIM(code))='MB';
+UPDATE products SET stock=8, description='BOXER REGULER' WHERE brand_id=2 AND UPPER(TRIM(code))='MBR';
+UPDATE products SET stock=13, description='CELANA POTONG ANAK' WHERE brand_id=2 AND UPPER(TRIM(code))='MCWJ';
+UPDATE products SET stock=56, description='CELANA PENDEK COWOK' WHERE brand_id=2 AND UPPER(TRIM(code))='MHPF';
+UPDATE products SET stock=32, description='JAS HITAM' WHERE brand_id=2 AND UPPER(TRIM(code))='MJFL';
+UPDATE products SET stock=16, description='CELANA KATUN POTONGAN' WHERE brand_id=2 AND UPPER(TRIM(code))='MPC';
+UPDATE products SET stock=4, description='KAOS OBLONG PENDEK COWOK' WHERE brand_id=2 AND UPPER(TRIM(code))='MRN';
+UPDATE products SET stock=22, description='POLO SHIRT' WHERE brand_id=2 AND UPPER(TRIM(code))='MSTC';
+UPDATE products SET stock=1, description='JAKET KULIT' WHERE brand_id=2 AND UPPER(TRIM(code))='OCL';
+UPDATE products SET stock=0, description='JAKET KULIT B' WHERE brand_id=2 AND UPPER(TRIM(code))='OCLB';
+UPDATE products SET stock=1, description='CELANA DALAM CEWEK' WHERE brand_id=2 AND UPPER(TRIM(code))='PT';
+UPDATE products SET stock=2, description='CELANA DALAM CEWWEK REGULER' WHERE brand_id=2 AND UPPER(TRIM(code))='PTR';
+UPDATE products SET stock=25, description='HANDUK' WHERE brand_id=2 AND UPPER(TRIM(code))='RBTL';
+UPDATE products SET stock=7, description='COAT KATUN' WHERE brand_id=2 AND UPPER(TRIM(code))='RCA';
+UPDATE products SET stock=4, description='SKINNY JEANS ( CELANA PENSIL )' WHERE brand_id=2 AND UPPER(TRIM(code))='SKYJ';
+UPDATE products SET stock=1, description='BAJU RENANG ANAK' WHERE brand_id=2 AND UPPER(TRIM(code))='SMC';
+UPDATE products SET stock=5, description='BAJU OLAH RAGA / DRY FIT' WHERE brand_id=2 AND UPPER(TRIM(code))='STSW';
+UPDATE products SET stock=2, description='TAPLAK MEJA' WHERE brand_id=2 AND UPPER(TRIM(code))='TCC';
+UPDATE products SET stock=3, description='LEGGING' WHERE brand_id=2 AND UPPER(TRIM(code))='TIGH';
+UPDATE products SET stock=10, description='CREWNECK' WHERE brand_id=2 AND UPPER(TRIM(code))='TR';
+UPDATE products SET stock=34, description='HOODIE COWOK' WHERE brand_id=2 AND UPPER(TRIM(code))='TRZ';
+UPDATE products SET stock=28, description='HOODIE MIX' WHERE brand_id=2 AND UPPER(TRIM(code))='TRZB';
+UPDATE products SET stock=1, description='TRACKTOP CEWEK' WHERE brand_id=2 AND UPPER(TRIM(code))='TWJL';
+UPDATE products SET stock=0, description='TRACKTOP' WHERE brand_id=2 AND UPPER(TRIM(code))='TWJZ';
+UPDATE products SET stock=2, description='CELANA TRAINING' WHERE brand_id=2 AND UPPER(TRIM(code))='TWP';
+UPDATE products SET stock=1, description='TOWEL / HANDUK KECIL' WHERE brand_id=2 AND UPPER(TRIM(code))='TWS';
+UPDATE products SET stock=2, description='GAUN PESTA' WHERE brand_id=2 AND UPPER(TRIM(code))='WDRS';
+UPDATE products SET stock=12, description='JAKET TEBAL' WHERE brand_id=2 AND UPPER(TRIM(code))='ZJA';
+UPDATE products SET stock=5, description='JAKET TEBAL ANAK-ANAK' WHERE brand_id=2 AND UPPER(TRIM(code))='ZJC';
+UPDATE products SET stock=2, description='JAKET TIPIS' WHERE brand_id=2 AND UPPER(TRIM(code))='ZJL';
+
+-- HONGYANG (brand_id = 1)
+UPDATE products SET stock=10, description='CELANA KATUN COWOK' WHERE brand_id=1 AND UPPER(TRIM(code))='ACP';
+UPDATE products SET stock=2, description='TAS' WHERE brand_id=1 AND UPPER(TRIM(code))='BAGL';
+UPDATE products SET stock=5, description='GENDONGAN BAYI' WHERE brand_id=1 AND UPPER(TRIM(code))='BBC';
+UPDATE products SET stock=2, description='BRA' WHERE brand_id=1 AND UPPER(TRIM(code))='BH';
+UPDATE products SET stock=2, description='BRA REGULER' WHERE brand_id=1 AND UPPER(TRIM(code))='BHR';
+UPDATE products SET stock=3, description='KEMEJA COWOK' WHERE brand_id=1 AND UPPER(TRIM(code))='CAS';
+UPDATE products SET stock=10, description='CELANA KULOT' WHERE brand_id=1 AND UPPER(TRIM(code))='CLS';
+UPDATE products SET stock=5, description='ANAK TIPIS' WHERE brand_id=1 AND UPPER(TRIM(code))='CWAA';
+UPDATE products SET stock=5, description='DRESS ANAKK-ANAK' WHERE brand_id=1 AND UPPER(TRIM(code))='CWGG';
+UPDATE products SET stock=5, description='CELANA PENDEK ANAK' WHERE brand_id=1 AND UPPER(TRIM(code))='CWS';
+UPDATE products SET stock=2, description='KARGO PENDEK COWOK' WHERE brand_id=1 AND UPPER(TRIM(code))='HTP';
+UPDATE products SET stock=2, description='CELANA PENDEK CEWEK' WHERE brand_id=1 AND UPPER(TRIM(code))='HTPL';
+UPDATE products SET stock=5, description='BLOUSE KATUN' WHERE brand_id=1 AND UPPER(TRIM(code))='LBC';
+UPDATE products SET stock=5, description='CELANA JEANS CEWEK' WHERE brand_id=1 AND UPPER(TRIM(code))='LBJP';
+UPDATE products SET stock=12, description='BLOUSE MIX' WHERE brand_id=1 AND UPPER(TRIM(code))='LBM';
+UPDATE products SET stock=1, description='JAKET JEANS' WHERE brand_id=1 AND UPPER(TRIM(code))='LCDS';
+UPDATE products SET stock=10, description='CELANA KATUN CEWEK' WHERE brand_id=1 AND UPPER(TRIM(code))='LCPL';
+UPDATE products SET stock=10, description='DRESS MIX' WHERE brand_id=1 AND UPPER(TRIM(code))='LDS';
+UPDATE products SET stock=5, description='RAJUTAN' WHERE brand_id=1 AND UPPER(TRIM(code))='LSKK';
+UPDATE products SET stock=10, description='ROK' WHERE brand_id=1 AND UPPER(TRIM(code))='LSML';
+UPDATE products SET stock=10, description='KAOS OBLONG PENDEK CEWEK' WHERE brand_id=1 AND UPPER(TRIM(code))='LTB';
+UPDATE products SET stock=2, description='CELANA PENDEK SPORT' WHERE brand_id=1 AND UPPER(TRIM(code))='MAS';
+UPDATE products SET stock=2, description='BOXER' WHERE brand_id=1 AND UPPER(TRIM(code))='MB';
+UPDATE products SET stock=2, description='BOXER REGULER' WHERE brand_id=1 AND UPPER(TRIM(code))='MBR';
+UPDATE products SET stock=5, description='CELANA PENDEK COWOK' WHERE brand_id=1 AND UPPER(TRIM(code))='MHPF';
+UPDATE products SET stock=2, description='KAOS OBLONG PENDEK COWOK' WHERE brand_id=1 AND UPPER(TRIM(code))='MRN';
+UPDATE products SET stock=2, description='POLO SHIRT' WHERE brand_id=1 AND UPPER(TRIM(code))='MSTC';
+UPDATE products SET stock=2, description='POLO PANJANG' WHERE brand_id=1 AND UPPER(TRIM(code))='MTSM';
+UPDATE products SET stock=5, description='CREWNECK' WHERE brand_id=1 AND UPPER(TRIM(code))='TR';
+UPDATE products SET stock=5, description='HOODIE COWOK' WHERE brand_id=1 AND UPPER(TRIM(code))='TRZ';
+UPDATE products SET stock=5, description='HOODIE MIX' WHERE brand_id=1 AND UPPER(TRIM(code))='TRZB';
+UPDATE products SET stock=2, description='CELANA TRAINING' WHERE brand_id=1 AND UPPER(TRIM(code))='TWP';
+UPDATE products SET stock=5, description='TRACKTOP' WHERE brand_id=1 AND UPPER(TRIM(code))='TWZJ';
+UPDATE products SET stock=5, description='JAKET TEBAL' WHERE brand_id=1 AND UPPER(TRIM(code))='ZJA';
+UPDATE products SET stock=5, description='JAKET TIPIS' WHERE brand_id=1 AND UPPER(TRIM(code))='ZJL';
+
+-- Hapus produk percobaan TEST001 jika tidak punya transaksi.
+DELETE p FROM products p WHERE p.brand_id=1 AND UPPER(TRIM(p.code))='TEST001' AND NOT EXISTS (SELECT 1 FROM stock_movements sm WHERE sm.product_id=p.id) AND NOT EXISTS (SELECT 1 FROM sales s WHERE s.product_id=p.id);
+
+COMMIT;
+
+-- Verifikasi:
+SELECT b.name AS brand, COUNT(*) AS produk, SUM(p.stock) AS total_stock FROM products p JOIN brands b ON b.id=p.brand_id GROUP BY b.id,b.name ORDER BY b.id;
+SELECT COUNT(*) AS total_produk, SUM(stock) AS total_stock FROM products;
+SELECT id, brand_id, code, description, stock FROM products ORDER BY brand_id, code;
