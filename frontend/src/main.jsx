@@ -243,7 +243,7 @@ function ClearableTextarea({
 ============================================================ */
 
 function Login({ onLogin, onGuest }) {
-  const [username, setUsername] = useState("admin");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
