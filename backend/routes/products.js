@@ -1,480 +1,857 @@
 const express = require("express");
 const db = require("../config/database");
-const { authenticateToken, requireAdmin } = require("../middleware/auth");
+const {
+    authenticateToken,
+    requireAdmin
+} = require("../middleware/auth");
 
 const router = express.Router();
+
+function normalizeCode(value) {
+    return String(value || "")
+        .trim()
+        .toUpperCase();
+}
+
+function parseNonNegativeInteger(
+    value,
+    fieldName
+) {
+    const number = Number(value);
+
+    if (
+        !Number.isInteger(number) ||
+        number < 0
+    ) {
+        throw new Error(
+            `${fieldName} harus berupa angka bulat 0 atau lebih`
+        );
+    }
+
+    return number;
+}
+
+function parseNonNegativeNumber(
+    value,
+    fieldName
+) {
+    const number = Number(value);
+
+    if (
+        !Number.isFinite(number) ||
+        number < 0
+    ) {
+        throw new Error(
+            `${fieldName} harus berupa angka 0 atau lebih`
+        );
+    }
+
+    return number;
+}
 
 
 // ============================================================
 // GET SEMUA PRODUK
 // GET /api/products
 // ============================================================
-router.get("/", authenticateToken, async (req, res) => {
-    try {
-        const isAdmin = req.user.role === "admin";
 
-        const [products] = await db.query(`
-            SELECT
-                p.id,
-                p.brand_id,
-                b.name AS brand,
-                p.code,
-                p.description,
-                p.stock,
-                p.minimum_stock,
-                p.cost_price,
-                p.created_at,
-                p.updated_at
-            FROM products p
-            JOIN brands b ON b.id = p.brand_id
-            ${isAdmin ? "" : "WHERE p.stock > 0"}
-            ORDER BY p.id ASC
-        `);
+router.get(
+    "/",
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const isAdmin =
+                req.user.role === "admin";
 
-        const data = isAdmin
-            ? products
-            : products.map(p => ({
-                id: p.id,
-                brand_id: p.brand_id,
-                brand: p.brand,
-                code: p.code,
-                description: p.description,
-                stock: p.stock
-            }));
+            const [products] =
+                await db.query(`
+                    SELECT
+                        p.id,
+                        p.brand_id,
+                        b.name AS brand,
+                        p.code,
+                        p.description,
+                        p.stock,
+                        p.minimum_stock,
+                        p.cost_price,
+                        p.created_at,
+                        p.updated_at
+                    FROM products p
+                    JOIN brands b
+                        ON b.id = p.brand_id
+                    ${
+                        isAdmin
+                            ? ""
+                            : "WHERE p.stock > 0"
+                    }
+                    ORDER BY
+                        b.name ASC,
+                        p.code ASC
+                `);
 
-        return res.json({
-            success: true,
-            data
-        });
+            const data = isAdmin
+                ? products
+                : products.map(
+                    product => ({
+                        id: Number(
+                            product.id
+                        ),
+                        brand_id: Number(
+                            product.brand_id
+                        ),
+                        brand:
+                            product.brand,
+                        code:
+                            product.code,
+                        description:
+                            product.description,
+                        stock: Number(
+                            product.stock
+                        )
+                    })
+                );
 
-    } catch (error) {
-        console.error("GET PRODUCTS ERROR:", error);
+            return res.json({
+                success: true,
+                data
+            });
 
-        return res.status(500).json({
-            success: false,
-            message: "Gagal mengambil data produk"
-        });
+        } catch (error) {
+            console.error(
+                "GET PRODUCTS ERROR:",
+                error.message
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Gagal mengambil data produk"
+            });
+        }
     }
-});
+);
 
 
 // ============================================================
 // GET PRODUK BERDASARKAN ID
 // GET /api/products/:id
 // ============================================================
-router.get("/:id", authenticateToken, async (req, res) => {
-    try {
-        const [products] = await db.query(`
-            SELECT
-                p.id,
-                p.brand_id,
-                b.name AS brand,
-                p.code,
-                p.description,
-                p.stock,
-                p.minimum_stock,
-                p.cost_price,
-                p.created_at,
-                p.updated_at
-            FROM products p
-            JOIN brands b ON b.id = p.brand_id
-            WHERE p.id = ?
-        `, [req.params.id]);
 
-        if (products.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Produk tidak ditemukan"
-            });
-        }
+router.get(
+    "/:id",
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const productId =
+                Number(req.params.id);
 
-        const product = products[0];
+            if (
+                !Number.isInteger(productId) ||
+                productId <= 0
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "ID produk tidak valid"
+                });
+            }
 
-        if (req.user.role !== "admin") {
-            if (Number(product.stock) <= 0) {
+            const [products] =
+                await db.query(
+                    `
+                    SELECT
+                        p.id,
+                        p.brand_id,
+                        b.name AS brand,
+                        p.code,
+                        p.description,
+                        p.stock,
+                        p.minimum_stock,
+                        p.cost_price,
+                        p.created_at,
+                        p.updated_at
+                    FROM products p
+                    JOIN brands b
+                        ON b.id = p.brand_id
+                    WHERE p.id = ?
+                    LIMIT 1
+                    `,
+                    [productId]
+                );
+
+            if (products.length === 0) {
                 return res.status(404).json({
                     success: false,
-                    message: "Produk tidak ditemukan"
+                    message:
+                        "Produk tidak ditemukan"
+                });
+            }
+
+            const product =
+                products[0];
+
+            if (
+                req.user.role !==
+                "admin"
+            ) {
+                if (
+                    Number(product.stock) <= 0
+                ) {
+                    return res.status(404).json({
+                        success: false,
+                        message:
+                            "Produk tidak ditemukan"
+                    });
+                }
+
+                return res.json({
+                    success: true,
+                    data: {
+                        id: Number(
+                            product.id
+                        ),
+                        brand_id: Number(
+                            product.brand_id
+                        ),
+                        brand:
+                            product.brand,
+                        code:
+                            product.code,
+                        description:
+                            product.description,
+                        stock: Number(
+                            product.stock
+                        )
+                    }
                 });
             }
 
             return res.json({
                 success: true,
-                data: {
-                    id: product.id,
-                    brand_id: product.brand_id,
-                    brand: product.brand,
-                    code: product.code,
-                    description: product.description,
-                    stock: product.stock
-                }
+                data: product
+            });
+
+        } catch (error) {
+            console.error(
+                "GET PRODUCT ERROR:",
+                error.message
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Gagal mengambil produk"
             });
         }
-
-        return res.json({
-            success: true,
-            data: product
-        });
-
-    } catch (error) {
-        console.error("GET PRODUCT ERROR:", error);
-
-        return res.status(500).json({
-            success: false,
-            message: "Gagal mengambil produk"
-        });
     }
-});
+);
 
 
 // ============================================================
 // TAMBAH PRODUK
 // POST /api/products
 // ============================================================
-router.post("/", authenticateToken, requireAdmin, async (req, res) => {
-    try {
-        const {
-            brand_id,
-            code,
-            description = null,
-            stock = 0,
-            minimum_stock = 0,
-            cost_price = 0
-        } = req.body;
 
-        if (!brand_id || !code) {
-            return res.status(400).json({
-                success: false,
-                message: "brand_id dan code wajib diisi"
-            });
-        }
+router.post(
+    "/",
+    authenticateToken,
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const brandId =
+                Number(req.body?.brand_id);
 
-        if (Number(stock) < 0) {
-            return res.status(400).json({
-                success: false,
-                message: "stock tidak boleh kurang dari 0"
-            });
-        }
+            const code =
+                normalizeCode(
+                    req.body?.code
+                );
 
-        if (Number(minimum_stock) < 0) {
-            return res.status(400).json({
-                success: false,
-                message: "minimum_stock tidak boleh kurang dari 0"
-            });
-        }
+            const description =
+                req.body?.description == null
+                    ? null
+                    : String(
+                        req.body.description
+                    ).trim();
 
-        if (Number(cost_price) < 0) {
-            return res.status(400).json({
-                success: false,
-                message: "cost_price tidak boleh kurang dari 0"
-            });
-        }
+            const stock =
+                parseNonNegativeInteger(
+                    req.body?.stock ?? 0,
+                    "stock"
+                );
 
-        // Cek brand
-        const [brands] = await db.query(
-            "SELECT id FROM brands WHERE id = ?",
-            [brand_id]
-        );
+            const minimumStock =
+                parseNonNegativeInteger(
+                    req.body?.minimum_stock ?? 0,
+                    "minimum_stock"
+                );
 
-        if (brands.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Brand tidak ditemukan"
-            });
-        }
+            const costPrice =
+                parseNonNegativeNumber(
+                    req.body?.cost_price ?? 0,
+                    "cost_price"
+                );
 
-        // Cek kode produk
-        const [existing] = await db.query(
-            "SELECT id FROM products WHERE brand_id = ? AND code = ?",
-            [brand_id, code]
-        );
-
-        if (existing.length > 0) {
-            return res.status(409).json({
-                success: false,
-                message: "Produk dengan code tersebut sudah ada pada brand ini"
-            });
-        }
-
-        const [result] = await db.query(`
-            INSERT INTO products
-            (
-                brand_id,
-                code,
-                description,
-                stock,
-                minimum_stock,
-                cost_price
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-        `, [
-            brand_id,
-            code,
-            description && String(description).trim()
-                ? String(description).trim()
-                : null,
-            stock,
-            minimum_stock,
-            cost_price
-        ]);
-
-        return res.status(201).json({
-            success: true,
-            message: "Produk berhasil ditambahkan",
-            data: {
-                id: result.insertId,
-                brand_id: Number(brand_id),
-                code,
-                description: description && String(description).trim()
-                    ? String(description).trim()
-                    : null,
-                stock: Number(stock),
-                minimum_stock: Number(minimum_stock),
-                cost_price: Number(cost_price)
+            if (
+                !Number.isInteger(brandId) ||
+                brandId <= 0 ||
+                !code
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "brand_id dan code wajib diisi"
+                });
             }
-        });
 
-    } catch (error) {
-        console.error("CREATE PRODUCT ERROR:", error);
+            if (code.length > 100) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Kode produk terlalu panjang"
+                });
+            }
 
-        return res.status(500).json({
-            success: false,
-            message: "Gagal menambahkan produk"
-        });
+            if (description && description.length > 1000) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Keterangan produk terlalu panjang"
+                });
+            }
+
+            const [brands] =
+                await db.query(
+                    `
+                    SELECT id
+                    FROM brands
+                    WHERE id = ?
+                    LIMIT 1
+                    `,
+                    [brandId]
+                );
+
+            if (brands.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "Brand tidak ditemukan"
+                });
+            }
+
+            const [existing] =
+                await db.query(
+                    `
+                    SELECT id
+                    FROM products
+                    WHERE brand_id = ?
+                    AND UPPER(code) = ?
+                    LIMIT 1
+                    `,
+                    [brandId, code]
+                );
+
+            if (existing.length > 0) {
+                return res.status(409).json({
+                    success: false,
+                    message:
+                        "Produk dengan code tersebut sudah ada pada brand ini"
+                });
+            }
+
+            const [result] =
+                await db.query(
+                    `
+                    INSERT INTO products
+                    (
+                        brand_id,
+                        code,
+                        description,
+                        stock,
+                        minimum_stock,
+                        cost_price
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    `,
+                    [
+                        brandId,
+                        code,
+                        description || null,
+                        stock,
+                        minimumStock,
+                        costPrice
+                    ]
+                );
+
+            return res.status(201).json({
+                success: true,
+                message:
+                    "Produk berhasil ditambahkan",
+                data: {
+                    id: Number(
+                        result.insertId
+                    ),
+                    brand_id: brandId,
+                    code,
+                    description:
+                        description || null,
+                    stock,
+                    minimum_stock:
+                        minimumStock,
+                    cost_price:
+                        costPrice
+                }
+            });
+
+        } catch (error) {
+            if (
+                error.message.includes(
+                    "harus berupa"
+                ) ||
+                error.message.includes(
+                    "terlalu panjang"
+                )
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
+            console.error(
+                "CREATE PRODUCT ERROR:",
+                error.message
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Gagal menambahkan produk"
+            });
+        }
     }
-});
+);
 
 
 // ============================================================
 // EDIT PRODUK
 // PUT /api/products/:id
-//
-// Bisa mengubah:
-// - brand_id
-// - code
-// - stock
-// - cost_price
 // ============================================================
-router.put("/:id", authenticateToken, requireAdmin, async (req, res) => {
-    try {
-        const {
-            brand_id,
-            code,
-            description,
-            stock,
-            cost_price
-        } = req.body;
 
-        const productId = req.params.id;
+router.put(
+    "/:id",
+    authenticateToken,
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const productId =
+                Number(req.params.id);
 
-        // Cek produk
-        const [products] = await db.query(
-            "SELECT id FROM products WHERE id = ?",
-            [productId]
-        );
-
-        if (products.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Produk tidak ditemukan"
-            });
-        }
-
-        // Validasi brand jika dikirim
-        if (brand_id !== undefined) {
-            const [brands] = await db.query(
-                "SELECT id FROM brands WHERE id = ?",
-                [brand_id]
-            );
-
-            if (brands.length === 0) {
-                return res.status(404).json({
+            if (
+                !Number.isInteger(productId) ||
+                productId <= 0
+            ) {
+                return res.status(400).json({
                     success: false,
-                    message: "Brand tidak ditemukan"
+                    message:
+                        "ID produk tidak valid"
                 });
             }
-        }
 
-        // Validasi stock
-        if (stock !== undefined && Number(stock) < 0) {
-            return res.status(400).json({
-                success: false,
-                message: "stock tidak boleh kurang dari 0"
-            });
-        }
+            const [currentRows] =
+                await db.query(
+                    `
+                    SELECT
+                        id,
+                        brand_id,
+                        code
+                    FROM products
+                    WHERE id = ?
+                    LIMIT 1
+                    `,
+                    [productId]
+                );
 
-        // Validasi harga modal
-        if (cost_price !== undefined && Number(cost_price) < 0) {
-            return res.status(400).json({
-                success: false,
-                message: "cost_price tidak boleh kurang dari 0"
-            });
-        }
+            if (currentRows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "Produk tidak ditemukan"
+                });
+            }
 
-        // Cek apakah code baru bentrok
-        if (code !== undefined || brand_id !== undefined) {
-            const [existing] = await db.query(
-                `
-                SELECT id
-                FROM products
-                WHERE brand_id = ?
-                AND code = ?
-                AND id != ?
-                `,
-                [
-                    brand_id !== undefined
-                        ? brand_id
-                        : (
-                            await db.query(
-                                "SELECT brand_id FROM products WHERE id = ?",
-                                [productId]
-                            )
-                        )[0][0].brand_id,
-                    code !== undefined
-                        ? code
-                        : (
-                            await db.query(
-                                "SELECT code FROM products WHERE id = ?",
-                                [productId]
-                            )
-                        )[0][0].code,
-                    productId
-                ]
-            );
+            const current =
+                currentRows[0];
+
+            const nextBrandId =
+                req.body?.brand_id !== undefined
+                    ? Number(
+                        req.body.brand_id
+                    )
+                    : Number(
+                        current.brand_id
+                    );
+
+            const nextCode =
+                req.body?.code !== undefined
+                    ? normalizeCode(
+                        req.body.code
+                    )
+                    : normalizeCode(
+                        current.code
+                    );
+
+            if (
+                !Number.isInteger(
+                    nextBrandId
+                ) ||
+                nextBrandId <= 0
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "brand_id tidak valid"
+                });
+            }
+
+            if (!nextCode) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "code tidak boleh kosong"
+                });
+            }
+
+            if (nextCode.length > 100) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Kode produk terlalu panjang"
+                });
+            }
+
+            if (
+                req.body?.description !==
+                undefined &&
+                req.body.description !== null &&
+                String(
+                    req.body.description
+                ).trim().length > 1000
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Keterangan produk terlalu panjang"
+                });
+            }
+
+            if (
+                req.body?.brand_id !==
+                undefined
+            ) {
+                const [brands] =
+                    await db.query(
+                        `
+                        SELECT id
+                        FROM brands
+                        WHERE id = ?
+                        LIMIT 1
+                        `,
+                        [nextBrandId]
+                    );
+
+                if (
+                    brands.length === 0
+                ) {
+                    return res.status(404).json({
+                        success: false,
+                        message:
+                            "Brand tidak ditemukan"
+                    });
+                }
+            }
+
+            if (
+                req.body?.stock !==
+                undefined
+            ) {
+                parseNonNegativeInteger(
+                    req.body.stock,
+                    "stock"
+                );
+            }
+
+            if (
+                req.body?.cost_price !==
+                undefined
+            ) {
+                parseNonNegativeNumber(
+                    req.body.cost_price,
+                    "cost_price"
+                );
+            }
+
+            const [existing] =
+                await db.query(
+                    `
+                    SELECT id
+                    FROM products
+                    WHERE brand_id = ?
+                    AND UPPER(code) = ?
+                    AND id != ?
+                    LIMIT 1
+                    `,
+                    [
+                        nextBrandId,
+                        nextCode,
+                        productId
+                    ]
+                );
 
             if (existing.length > 0) {
                 return res.status(409).json({
                     success: false,
-                    message: "Produk dengan code tersebut sudah ada pada brand ini"
+                    message:
+                        "Produk dengan code tersebut sudah ada pada brand ini"
                 });
             }
-        }
 
-        const fields = [];
-        const values = [];
+            const fields = [];
+            const values = [];
 
-        if (brand_id !== undefined) {
-            fields.push("brand_id = ?");
-            values.push(brand_id);
-        }
+            if (
+                req.body?.brand_id !==
+                undefined
+            ) {
+                fields.push(
+                    "brand_id = ?"
+                );
+                values.push(
+                    nextBrandId
+                );
+            }
 
-        if (code !== undefined) {
-            fields.push("code = ?");
-            values.push(code);
-        }
+            if (
+                req.body?.code !==
+                undefined
+            ) {
+                fields.push(
+                    "code = ?"
+                );
+                values.push(
+                    nextCode
+                );
+            }
 
-        if (description !== undefined) {
-            fields.push("description = ?");
-            values.push(
-                description && String(description).trim()
-                    ? String(description).trim()
-                    : null
+            if (
+                req.body?.description !==
+                undefined
+            ) {
+                const description =
+                    req.body.description == null
+                        ? null
+                        : String(
+                            req.body.description
+                        ).trim();
+
+                fields.push(
+                    "description = ?"
+                );
+                values.push(
+                    description || null
+                );
+            }
+
+            if (
+                req.body?.stock !==
+                undefined
+            ) {
+                const stock =
+                    parseNonNegativeInteger(
+                        req.body.stock,
+                        "stock"
+                    );
+
+                fields.push(
+                    "stock = ?"
+                );
+                values.push(stock);
+            }
+
+            if (
+                req.body?.cost_price !==
+                undefined
+            ) {
+                const costPrice =
+                    parseNonNegativeNumber(
+                        req.body.cost_price,
+                        "cost_price"
+                    );
+
+                fields.push(
+                    "cost_price = ?"
+                );
+                values.push(
+                    costPrice
+                );
+            }
+
+            if (fields.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Tidak ada data yang diubah"
+                });
+            }
+
+            values.push(productId);
+
+            await db.query(
+                `
+                UPDATE products
+                SET ${fields.join(", ")}
+                WHERE id = ?
+                `,
+                values
             );
-        }
 
-        if (stock !== undefined) {
-            fields.push("stock = ?");
-            values.push(stock);
-        }
+            return res.json({
+                success: true,
+                message:
+                    "Produk berhasil diperbarui"
+            });
 
-        if (cost_price !== undefined) {
-            fields.push("cost_price = ?");
-            values.push(cost_price);
-        }
+        } catch (error) {
+            if (
+                error.message.includes(
+                    "harus berupa"
+                ) ||
+                error.message.includes(
+                    "terlalu panjang"
+                )
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message
+                });
+            }
 
-        if (fields.length === 0) {
-            return res.status(400).json({
+            console.error(
+                "UPDATE PRODUCT ERROR:",
+                error.message
+            );
+
+            return res.status(500).json({
                 success: false,
-                message: "Tidak ada data yang diubah"
+                message:
+                    "Gagal memperbarui produk"
             });
         }
-
-        values.push(productId);
-
-        await db.query(
-            `UPDATE products SET ${fields.join(", ")} WHERE id = ?`,
-            values
-        );
-
-        return res.json({
-            success: true,
-            message: "Produk berhasil diperbarui"
-        });
-
-    } catch (error) {
-        console.error("UPDATE PRODUCT ERROR:", error);
-
-        return res.status(500).json({
-            success: false,
-            message: "Gagal memperbarui produk"
-        });
     }
-});
+);
 
 
 // ============================================================
 // HAPUS PRODUK
 // DELETE /api/products/:id
 // ============================================================
-router.delete("/:id", authenticateToken, requireAdmin, async (req, res) => {
-    try {
-        const [products] = await db.query(
-            "SELECT id, stock FROM products WHERE id = ?",
-            [req.params.id]
-        );
 
-        if (products.length === 0) {
-            return res.status(404).json({
+router.delete(
+    "/:id",
+    authenticateToken,
+    requireAdmin,
+    async (req, res) => {
+        try {
+            const productId =
+                Number(req.params.id);
+
+            if (
+                !Number.isInteger(productId) ||
+                productId <= 0
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "ID produk tidak valid"
+                });
+            }
+
+            const [products] =
+                await db.query(
+                    `
+                    SELECT id, stock
+                    FROM products
+                    WHERE id = ?
+                    LIMIT 1
+                    `,
+                    [productId]
+                );
+
+            if (products.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "Produk tidak ditemukan"
+                });
+            }
+
+            if (
+                Number(
+                    products[0].stock
+                ) > 0
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Produk tidak bisa dihapus karena stok masih tersedia"
+                });
+            }
+
+            const [movements] =
+                await db.query(
+                    `
+                    SELECT id
+                    FROM stock_movements
+                    WHERE product_id = ?
+                    LIMIT 1
+                    `,
+                    [productId]
+                );
+
+            if (movements.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Produk tidak bisa dihapus karena sudah memiliki riwayat stok"
+                });
+            }
+
+            await db.query(
+                `
+                DELETE FROM products
+                WHERE id = ?
+                `,
+                [productId]
+            );
+
+            return res.json({
+                success: true,
+                message:
+                    "Produk berhasil dihapus"
+            });
+
+        } catch (error) {
+            console.error(
+                "DELETE PRODUCT ERROR:",
+                error.message
+            );
+
+            return res.status(500).json({
                 success: false,
-                message: "Produk tidak ditemukan"
+                message:
+                    "Gagal menghapus produk"
             });
         }
-
-        // Tidak boleh hapus jika stok masih ada
-        if (Number(products[0].stock) > 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Produk tidak bisa dihapus karena stok masih tersedia"
-            });
-        }
-
-        // Tidak boleh hapus jika sudah punya riwayat stok
-        const [movements] = await db.query(
-            `
-            SELECT id
-            FROM stock_movements
-            WHERE product_id = ?
-            LIMIT 1
-            `,
-            [req.params.id]
-        );
-
-        if (movements.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Produk tidak bisa dihapus karena sudah memiliki riwayat stok"
-            });
-        }
-
-        await db.query(
-            "DELETE FROM products WHERE id = ?",
-            [req.params.id]
-        );
-
-        return res.json({
-            success: true,
-            message: "Produk berhasil dihapus"
-        });
-
-    } catch (error) {
-        console.error("DELETE PRODUCT ERROR:", error);
-
-        return res.status(500).json({
-            success: false,
-            message: "Gagal menghapus produk"
-        });
     }
-});
-
+);
 
 module.exports = router;

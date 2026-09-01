@@ -3,7 +3,9 @@ import { createRoot } from "react-dom/client";
 import * as XLSX from "xlsx";
 import "./styles.css";
 
-const API = "http://localhost:3000/api";
+const API =
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:3000/api";
 
 async function api(path, options = {}) {
   const token = localStorage.getItem("token");

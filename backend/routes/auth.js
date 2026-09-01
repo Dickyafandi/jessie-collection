@@ -1,13 +1,31 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const rateLimit = require("express-rate-limit");
 const db = require("../config/database");
 
 const router = express.Router();
 
-router.post("/login", async (req, res) => {
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: "Terlalu banyak percobaan login. Silakan coba lagi nanti."
+    }
+});
+
+router.post("/login", loginLimiter, async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const username = String(
+            req.body?.username || ""
+        ).trim();
+
+        const password = String(
+            req.body?.password || ""
+        );
 
         if (!username || !password) {
             return res.status(400).json({
@@ -16,8 +34,33 @@ router.post("/login", async (req, res) => {
             });
         }
 
+        if (username.length > 100 || password.length > 200) {
+            return res.status(400).json({
+                success: false,
+                message: "Data login tidak valid"
+            });
+        }
+
+        if (!process.env.JWT_SECRET) {
+            console.error("JWT_SECRET belum dikonfigurasi.");
+
+            return res.status(500).json({
+                success: false,
+                message: "Konfigurasi autentikasi server belum siap"
+            });
+        }
+
         const [users] = await db.query(
-            "SELECT id, username, password, role FROM users WHERE username = ?",
+            `
+            SELECT
+                id,
+                username,
+                password,
+                role
+            FROM users
+            WHERE username = ?
+            LIMIT 1
+            `,
             [username]
         );
 
@@ -30,10 +73,11 @@ router.post("/login", async (req, res) => {
 
         const user = users[0];
 
-        const passwordMatch = await bcrypt.compare(
-            password,
-            user.password
-        );
+        const passwordMatch =
+            await bcrypt.compare(
+                password,
+                user.password
+            );
 
         if (!passwordMatch) {
             return res.status(401).json({
@@ -54,7 +98,7 @@ router.post("/login", async (req, res) => {
             }
         );
 
-        res.json({
+        return res.json({
             success: true,
             message: "Login berhasil",
             token,
@@ -66,9 +110,12 @@ router.post("/login", async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+        console.error(
+            "LOGIN ERROR:",
+            error.message
+        );
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: "Terjadi kesalahan server"
         });
